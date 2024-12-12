@@ -1,0 +1,400 @@
+import pygame
+import random
+import sys
+
+
+high_score = 0
+score = 0
+g_level = 0
+pygame.init()
+
+st2 = True
+
+# Screen setup
+SCREEN_WIDTH = 1500
+SCREEN_HEIGHT = 844
+window = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Fruit Catcher")
+
+
+#MUSICS
+bg_music = pygame.mixer.Sound("sources/backgroud monkey.mp3")
+death_music = pygame.mixer.Sound("sources/deathmusic.mp3")
+pop_effect = pygame.mixer.Sound("sources/pop.mp3")
+game_over=pygame.mixer.Sound("sources/game-over.mp3")
+yay=pygame.mixer.Sound("sources/yay.mp3")
+Bgmusicspeed = pygame.mixer.Sound("sources/Bgmusicspeed.mp3")
+bombsou = pygame.mixer.Sound("sources/bombsou.mp3")
+sound_d_played=False
+sound_g_played=False
+sound_e_played=False
+sound_y2_played=False
+sound_y3_played=False
+sound_win = False
+
+# Colors
+WHITE = (255, 255, 255)
+BLUE = (0, 0, 255)
+BROWN = (153,88,42)
+
+# Load images
+def load_scaled_image(path, width, height):
+    image = pygame.image.load(path).convert_alpha()
+    return pygame.transform.scale(image, (width, height))
+
+# Font loading
+def safe_load_font(path, size):
+    return pygame.font.Font(path, size)
+
+# Image 
+background_image = load_scaled_image("sources/bg.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
+character_image = load_scaled_image("sources/character.png", 225, 270)
+bg_start = load_scaled_image("sources/bgstart.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
+story_img = load_scaled_image("sources/story.png", SCREEN_WIDTH, SCREEN_HEIGHT)
+story2_img = load_scaled_image("sources/story2.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
+scalestory_img5 = load_scaled_image("sources/death.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
+story_img4 = load_scaled_image("sources/bgforestconny.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
+scalestory_img3 = load_scaled_image("sources/story3.jpg", SCREEN_WIDTH, SCREEN_HEIGHT)
+
+# Fonts
+DotFont = safe_load_font("sources/Doto-ExtraBold.ttf", 40)
+DotFont1 = safe_load_font("sources/Doto-ExtraBold.ttf", 90)
+robotoFont = safe_load_font("sources/Roboto-Regular.ttf", 40)
+
+# Game state 
+current_screen = "start"
+running = True
+
+# Button 
+start_button = pygame.Rect(500, 578, 488, 168)
+story_button = pygame.Rect(600, 735, 300, 80)
+
+# Utility Functions
+def handle_events():
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        yield event
+
+def render_button(window, button_rect, text, font, bg_color, text_color):
+    pygame.draw.rect(window, bg_color, button_rect, border_radius=50)
+    btn_text = font.render(text, True, text_color)
+    btn_text_rect = btn_text.get_rect(center=button_rect.center)
+    window.blit(btn_text, btn_text_rect)
+
+# Screens
+def start_screen():
+    global st2,sound_d_played,sound_e_played,sound_g_played,sound_y2_played,sound_y3_played
+    sound_d_played=False
+    sound_g_played=False
+    sound_e_played=False
+    sound_y2_played=False
+    sound_y3_played=False
+    st2 = True
+    window.blit(bg_start, (0, 0))
+    #render_button(window, start_button, "Start Game", DotFont, BROWN, WHITE)
+
+    for event in handle_events():
+        if event.type == pygame.MOUSEBUTTONDOWN and start_button.collidepoint(event.pos):
+            return "story"
+
+    pygame.display.update()
+    return "start"
+
+def story():
+    window.blit(story_img, (0, 0))
+    render_button(window, story_button, "Continue", DotFont, BROWN, WHITE)
+
+    for event in handle_events():
+        if event.type == pygame.MOUSEBUTTONDOWN and story_button.collidepoint(event.pos):
+            return "l1"
+
+    pygame.display.update()
+    return "story"
+
+def story2(spef):
+    global st2,sound_y2_played
+    bg_music.stop()
+    if not(sound_y2_played):
+        yay.play()
+        sound_y2_played=True
+    
+    if st2:
+        fruit_image = load_scaled_image(f"sources/{spef}.png", 75, 75)
+        window.blit(story2_img, (0, 0))
+        render_button(window, story_button, "Continue", DotFont, BROWN, WHITE)
+        window.blit(fruit_image, (675, 600))  # Draw the fruit
+    st2 = False
+
+    # Handle user interaction
+    for event in handle_events():
+        if event.type == pygame.MOUSEBUTTONDOWN and story_button.collidepoint(event.pos):
+            return "l2", spef 
+
+    pygame.display.update() 
+    return "story2", spef 
+
+
+def death():
+    global sound_d_played
+    if not(sound_d_played):
+        death_music.play()
+        sound_d_played=True
+    
+    bg_music.stop()
+    window.blit(scalestory_img5, (0, 0))  
+    
+    render_button(window, story_button, "Continue!", DotFont, (153, 88, 42), WHITE)
+
+    for event in handle_events():  
+        if event.type == pygame.MOUSEBUTTONDOWN and story_button.collidepoint(event.pos):
+            return "end" 
+
+    pygame.display.update()  
+    return "death"  
+
+def story3():
+    global sound_y3_played
+    window.blit(scalestory_img3, (0, 0))
+    bg_music.stop()
+    if not(sound_y3_played):
+        yay.play()
+        sound_y3_played=True
+
+    render_button(window, story_button, "Continue", DotFont, BROWN, WHITE)
+
+    for event in handle_events():
+        if event.type == pygame.MOUSEBUTTONDOWN and story_button.collidepoint(event.pos):
+            return "l3"  
+
+    pygame.display.update() 
+    return "story3"  
+total_score = 0
+
+def end():
+    
+    global high_score, score, current_screen, total_score,sound_e_played , sound_win
+    if not(sound_e_played) and g_level!=3:
+        game_over.play()
+        sound_e_played=True
+        
+    if g_level == 3 and not (sound_win):
+        yay.play()
+        sound_win = True
+    
+    bg_music.stop()
+    Bgmusicspeed.stop()
+    
+
+    window.fill((255, 255, 255))  # white background
+    window.blit(story_img4, (0, 0))  
+
+    # Update high score
+    high_score = max(high_score, total_score)  
+
+    # Render texts
+    game_over_text = DotFont1.render("CONGRATULATIONS!" if g_level == 3 else "GAME OVER", True, "green" if (g_level == 3) else "red")
+    total_score_text = robotoFont.render(f"TOTAL SCORE: {total_score}", True, "white")
+    high_score_text = robotoFont.render(f"HIGH SCORE: {high_score}", True, "white")
+    restart_text = robotoFont.render("Press 'R' to Restart or 'Q' to Quit", True, "white")
+
+    # Calculate position for game_over_text
+    if g_level == 3:  # Place "CONGRATULATIONS!" at the top center
+        text_x = (SCREEN_WIDTH - game_over_text.get_width()) // 2 + 80
+        text_y = (SCREEN_HEIGHT // 2 - 100) - 130  # Adjust for top position
+    else:  # Keep "GAME OVER" in the current position
+        text_x = (SCREEN_WIDTH // 2 - 150) - 100
+        text_y = (SCREEN_HEIGHT // 2 - 100) - 130
+
+    # Draw texts
+    window.blit(game_over_text, (text_x, text_y))
+    window.blit(total_score_text, ((SCREEN_WIDTH // 2 - 100) - 50, SCREEN_HEIGHT // 2 + 30))
+    window.blit(high_score_text, ((SCREEN_WIDTH // 2 - 100) - 50, (SCREEN_HEIGHT // 2 + 50) + 50))
+    window.blit(restart_text, ((SCREEN_WIDTH // 2 - 200) - 50, ((SCREEN_HEIGHT // 2 + 100) + 100)))
+
+    for event in handle_events():
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_r:
+                score = 0
+                total_score = 0  
+                return "start" 
+            elif event.key == pygame.K_q:
+                pygame.quit()
+                sys.exit()  # Quit the game
+
+    pygame.display.update()  
+    return "end" 
+
+def Game(level, spec=-1):
+    global score, total_score , g_level
+
+    # Set up level parameters
+    g_level = {"l1": 1, "l2": 2, "l3": 3}.get(level, 1)
+    display_text = False
+    text_start_time = 0
+    score = 0  # Reset score 
+    cre = 0  
+    fruit_x = random.randint(100, SCREEN_WIDTH - 100)
+    fruit_y = 0
+    fruit_speed = 10 if level in ["l1", "l2"] else 15  #speed
+    s_lmt = 100 if level == "l1" else 150  # Score limit
+    bas_xcor = 0
+    bas_ycor = SCREEN_HEIGHT - 244
+    bas_vel = 9
+    start_time = pygame.time.get_ticks()
+    if(g_level == 3 ):
+        Bgmusicspeed.play()
+    else:
+        bg_music.play()
+
+    # Increase speed for Level 3
+    if g_level == 3:
+        elapsed_time = (pygame.time.get_ticks() - start_time) // 1000
+        fruit_speed = 15 + (elapsed_time // 10)  # Increase speed every 10 seconds
+
+
+    clock = pygame.time.Clock()
+    fruit_type = 1
+    fruit_image = load_scaled_image(f"sources/{fruit_type}.png", 75, 75)
+
+    def drop_fruit(char_rect):
+        nonlocal fruit_x, fruit_y, fruit_type, fruit_image, display_text, text_start_time, cre
+        global score
+
+        # Move fruit
+        fruit_y += fruit_speed
+        if fruit_y > SCREEN_HEIGHT:
+            fruit_y = -50
+            fruit_x = random.randint(100, SCREEN_WIDTH - 100)
+            fruit_type = random.randint(1, 8)
+            fruit_image = load_scaled_image(f"sources/{fruit_type}.png", 75, 75)
+        
+        # Draw fruit
+        window.blit(fruit_image, (fruit_x, fruit_y))
+        fruit_rect = pygame.Rect(fruit_x + 17, fruit_y + 17, 40, 40)
+
+        # Collision check
+        if char_rect.colliderect(fruit_rect):
+            if fruit_type in [7,8]:
+                bombsou.play()
+            else:
+                pop_effect.play()
+            # Level-specific scoring logic
+            if g_level == 1:  # Level 1: Basic scoring
+                cre = -5 if fruit_type in [7, 8] else 10
+            elif g_level == 2:  # Level 2: Specific fruit scoring
+                if fruit_type in {spec, spec + 1 if spec % 2 == 1 else spec - 1}:
+                    cre = 10  # Double points for the specific fruit
+                elif fruit_type in [7, 8]:  # Bomb
+                    cre = -5
+                else:  # Other fruits
+                    cre = 5
+            elif g_level == 3:  # Level 3: More challenging scoring
+                cre = -10 if fruit_type in [7, 8] else 10
+
+            score += cre  # Update score
+            display_text = True
+            text_start_time = pygame.time.get_ticks()
+
+            # Reset fruit
+            fruit_y = -50
+            fruit_x = random.randint(100, SCREEN_WIDTH - 100)
+            fruit_type = random.randint(1, 8)
+            fruit_image = load_scaled_image(f"sources/{fruit_type}.png", 75, 75)
+
+        return fruit_rect
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        # Movement
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            bas_xcor = max(0, bas_xcor - bas_vel)
+        if keys[pygame.K_RIGHT]:
+            bas_xcor = min(SCREEN_WIDTH - 225, bas_xcor + bas_vel)
+
+        # Render background and character
+        window.blit(background_image, (0, 0))
+        window.blit(character_image, (bas_xcor, bas_ycor - 40))
+
+        # Score and Timer display
+        score_text = DotFont.render(f"Score: {score}", True, (255, 255, 0))
+        window.blit(score_text, (SCREEN_WIDTH - 300, 30))
+
+        time_left = max(0, 60 - (pygame.time.get_ticks() - start_time) // 1000)
+        timer_text = DotFont.render(f"Time: {time_left}s", True, (255, 255 , 0))
+        window.blit(timer_text, (SCREEN_WIDTH - 300, 70))
+
+        # Score bar (for Levels 1 and 2)
+        if g_level != 3:
+            hp_percentage = min(score / s_lmt, 1.0)
+            pygame.draw.rect(window, (0, 255, 0), (SCREEN_WIDTH - 300, 130, int(hp_percentage * 200), 20))
+            pygame.draw.rect(window, WHITE, (SCREEN_WIDTH - 300, 130, 200, 20), 2)
+
+        # Drop fruit and check collision
+        char_rect = pygame.Rect(bas_xcor + 98, bas_ycor + 140, 70, 25)
+
+        fruit_rect = drop_fruit(char_rect)
+
+        # Display score change
+        if display_text and pygame.time.get_ticks() - text_start_time < 1000:
+            color = (255, 255, 255) if cre > 0 else (255, 0, 0)
+            change_text = DotFont.render(f"{'+' if cre > 0 else ''}{cre}", True, color)
+            window.blit(change_text, (bas_xcor + 250 if (bas_xcor <= 1220) else bas_xcor - 85 , bas_ycor + 70))
+        elif display_text:
+            display_text = False
+
+        # End-game logic
+        if g_level == 3:
+            #level 3
+            if time_left <= 0:  
+                if g_level == 2 or g_level == 3:
+                    total_score += score  
+                return "end"
+        else:
+            # Level 1 and 2
+            if time_left <= 0 or score >= s_lmt:
+                if score >= s_lmt:  
+                    total_score += score
+                    return "story2" if g_level == 1 else "story3"
+                else:  
+                    if g_level == 1:
+                        score = 0  
+                    return "death"
+
+        pygame.display.flip()
+        clock.tick(60)
+
+level2_fruit = None
+
+# Main Game Loop
+while running:
+    if current_screen == "start":
+        current_screen = start_screen()
+        level2_fruit = None
+    elif current_screen == "story":
+        current_screen = story()
+    elif current_screen == "l1":
+        current_screen = Game("l1")  # Level 1
+    elif current_screen == "story2":
+        if level2_fruit is None:
+            level2_fruit = random.randint(1, 6)
+        current_screen, val = story2(level2_fruit)
+    elif current_screen == "l2":
+        current_screen = Game("l2", level2_fruit)  # Level 2 with the SAME specified fruit
+    elif current_screen == "story3":
+        current_screen = story3()  # Proceed to the next story screen
+        level2_fruit = None
+    elif current_screen == "l3":
+        current_screen = Game("l3")  # Level 3
+    elif current_screen == "death":
+        current_screen = death()  # If the player loses, show the death screen
+        level2_fruit = None
+    elif current_screen == "end":
+        current_screen = end()  # Show the end screen and handle the restart or quit
+        level2_fruit = None
