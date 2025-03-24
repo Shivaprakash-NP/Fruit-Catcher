@@ -24,7 +24,7 @@ Fruit Catcher is a fun and interactive arcade game developed using Python and Py
 ## Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/fruit-catcher.git
+   git clone https://github.com/Shivaprakash-NP/Fruit-Catcher.git
    ```
 2. Navigate to the project directory:
    ```bash
